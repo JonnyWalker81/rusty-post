@@ -10,32 +10,50 @@ use tokio_curl::Session;
 
 use std::io::{stdout, Write};
 
+#[derive(Clone)]
 pub enum HttpMethod {
     Get,
     Post
 }
 
+#[derive(Clone)]
+pub struct RequestConfig<'a>{
+    pub method: HttpMethod,
+    pub headers: Vec<&'a str>,
+    pub body: &'a str
+}
 
 pub struct Request<'a> {
     pub url: String,
-    pub method: HttpMethod,
-    pub headers: Vec<&'a str>
+    pub config: RequestConfig<'a>,
+}
+
+impl<'a> RequestConfig<'a> {
+    pub fn new(method: HttpMethod, headers: &Vec<&'a str>, body: &'a str) -> RequestConfig<'a>{
+        RequestConfig {
+            method: method,
+            headers: headers.clone(),
+            body: body
+        }
+    }
 }
 
 impl<'a> Request<'a> {
     pub fn new(url: String) -> Request<'a> {
         Request {
             url: url.clone(),
-            method: HttpMethod::Get,
-            headers: Vec::new()
+            config: RequestConfig {
+                method: HttpMethod::Get,
+                headers: Vec::new(),
+                body: ""
+            }
         }
     }
 
-    pub fn new_with_headers(url: String, headers: &Vec<&'a str>) -> Request<'a> {
+    pub fn new_with_config(url: String, config: &RequestConfig<'a>) -> Request<'a> {
         Request {
             url: url.clone(),
-            method: HttpMethod::Get,
-            headers: headers.clone()
+            config: config.clone()
         }
     }
 
@@ -57,13 +75,13 @@ impl<'a> Request<'a> {
         // header_list.append("Authorization: Basic anJvdGhiZXJnQGJsdWViZWFtLmNvbTpiYjEyMw==").unwrap();
         // header_list.append("Content-Type: application/json").unwrap();
 
-        for h in self.headers.clone() {
+        for h in self.config.headers.clone() {
             header_list.append(h).unwrap();
         }
 
         let mut b = Easy::new();
 
-        match self.method {
+        match self.config.method {
             HttpMethod::Get => {
                 b.get(true).unwrap();
             },
@@ -80,6 +98,9 @@ impl<'a> Request<'a> {
             stdout().write(data).unwrap();
             Ok(data.len())
         }).unwrap();
+
+        b.post_field_size(self.config.body.as_bytes().len() as u64).unwrap();
+        b.post_fields_copy(self.config.body.as_bytes()).unwrap();
 
         let requests = session.perform(b);
 
