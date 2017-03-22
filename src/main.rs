@@ -57,7 +57,8 @@ fn main() {
             println!("Headers: {:?}", headers);
             let config = RequestConfig::new(method, &headers, data);
             let request = Request::new_with_config(u.into(), &config);
-            request.request();
+            let resp = request.request();
+            println!("{}", resp);
         },
         None => {}
     }

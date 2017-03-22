@@ -1,5 +1,7 @@
 extern crate tokio_curl;
 extern crate curl;
+extern crate hyper;
+
 
 // extern crate env_logger;
 extern crate futures;
