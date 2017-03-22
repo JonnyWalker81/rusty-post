@@ -17,10 +17,23 @@ fn main() {
                  .arg(Arg::with_name("url")
                       .long("url")
                       .required(true)
-                 .takes_value(true)).get_matches();
+                      .takes_value(true))
+        .arg(Arg::with_name("H")
+             .short("H")
+             .long("header")
+             .multiple(true)
+        .takes_value(true)).get_matches();
     
     match matches.value_of("url") {
         Some(u) => {
+            let headers = match matches.values_of("H") {
+                Some(h) => {
+                    h.collect()
+                },
+                None => Vec::new()
+            };
+
+            println!("Headers: {:?}", headers);
             let request = Request::new(u.into());
             request.request();
         },

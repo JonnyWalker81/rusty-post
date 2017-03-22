@@ -10,15 +10,32 @@ use tokio_curl::Session;
 
 use std::io::{stdout, Write};
 
-
-pub struct Request {
-    pub url: String
+pub enum HttpMethod {
+    Get,
+    Post
 }
 
-impl Request {
-    pub fn new(url: String) -> Request {
+
+pub struct Request<'a> {
+    pub url: String,
+    pub method: HttpMethod,
+    pub headers: Vec<&'a str>
+}
+
+impl<'a> Request<'a> {
+    pub fn new(url: String) -> Request<'a> {
         Request {
-            url: url.clone()
+            url: url.clone(),
+            method: HttpMethod::Get,
+            headers: Vec::new()
+        }
+    }
+
+    pub fn new_with_headers(url: String, headers: &Vec<&'a str>) -> Request<'a> {
+        Request {
+            url: url.clone(),
+            method: HttpMethod::Get,
+            headers: headers.clone()
         }
     }
 
@@ -37,11 +54,23 @@ impl Request {
         // a.write_function(|data| Ok(data.len())).unwrap();
 
         let mut header_list = List::new();
-        header_list.append("Authorization: Basic anJvdGhiZXJnQGJsdWViZWFtLmNvbTpiYjEyMw==").unwrap();
-        header_list.append("Content-Type: application/json").unwrap();
+        // header_list.append("Authorization: Basic anJvdGhiZXJnQGJsdWViZWFtLmNvbTpiYjEyMw==").unwrap();
+        // header_list.append("Content-Type: application/json").unwrap();
+
+        for h in self.headers.clone() {
+            header_list.append(h).unwrap();
+        }
 
         let mut b = Easy::new();
-        b.get(true).unwrap();
+
+        match self.method {
+            HttpMethod::Get => {
+                b.get(true).unwrap();
+            },
+            HttpMethod::Post => {
+                b.post(true).unwrap();
+            }
+        }
         // http://markups.elasticbeanstalk.com/documents/2299d82e-c268-4df8-b22e-bc6fa88793b3/markups
         b.url(self.url.as_str()).unwrap();
         b.http_headers(header_list).unwrap();
